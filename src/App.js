@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { isEmpty, size } from 'lodash'
 import shortid from 'shortid'
+import { getCollection } from './actions'
 
 
 function App() {
@@ -8,12 +9,30 @@ function App() {
   const [tasks, setTasks] = useState([])  
   const [editMode, setEditMode] = useState(false)
   const [id, setId] = useState("")
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    (async () => {
+      const result = await getCollection("tasks")
+    })()
+  }, [])
+
+  const validForm = () => {
+    let isValid = true
+    setError(null)
+
+    if(isEmpty(task)) {
+      setError("Debes ingresar una tarea.")
+      isValid = false
+    }
+
+    return isValid
+  }
 
   const addTask = (e) => {
     e.preventDefault()
 
-    if(isEmpty(task)){
-      console.log("Task empty")
+    if(!validForm()){
       return
     }
 
@@ -29,8 +48,7 @@ function App() {
   const saveTask = (e) => {
     e.preventDefault()
 
-    if(isEmpty(task)){
-      console.log("Task empty")
+    if(!validForm()) {
       return
     }
 
@@ -62,7 +80,7 @@ function App() {
             <h4 className="text-center">Lista de Tareas</h4>
             {
               size(tasks) == 0 ? (
-                <p className="text-center text-danger">No hay tareas.</p>
+                <li className="list-group-item">No hay tareas programadas.</li>
               ) : (
                 <ul className="list-group">
                 {
@@ -90,6 +108,9 @@ function App() {
           <h4 className="text-center">{ editMode ? "Editar Tarea" : "Agregar Tarea" }</h4>
 
           <form onSubmit={ editMode ? saveTask : addTask }>
+            {
+              error && <span className="text-danger">{error}</span>
+            }
             <input 
               type="text" 
               className="form-control mb-2" 
@@ -97,6 +118,7 @@ function App() {
               onChange={(text) => setTask(text.target.value)}
               value={task}>              
             </input>
+        
             <button 
               type="submit" 
               className={ editMode ? "btn btn-warning btn-block" : "btn btn-dark btn-block" }>

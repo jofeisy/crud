@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { isEmpty, size } from 'lodash'
+import { isEmpty, size, sortBy } from 'lodash'
 import shortid from 'shortid'
-import { getCollection } from './actions'
+import { addDocument, getCollection, updateDocument, deleteDocument } from './actions'
 
 
 function App() {
@@ -14,6 +14,11 @@ function App() {
   useEffect(() => {
     (async () => {
       const result = await getCollection("tasks")
+
+      if(result.statusResponse) {
+        setTasks(sortBy(result.data, ['name']))
+      }
+      
     })()
   }, [])
 
@@ -29,28 +34,35 @@ function App() {
     return isValid
   }
 
-  const addTask = (e) => {
+  const addTask = async(e) => {
     e.preventDefault()
 
     if(!validForm()){
       return
     }
 
-    const newTask = {
-      id: shortid.generate(),
-      name: task
+    const result = await addDocument("tasks", { name: task })
+    if(!result.statusResponse) {
+      setError(result.error)
+      return
     }
 
-    setTasks([ ...tasks, newTask ])
+    setTasks([ ...tasks, { id: result.data.id, name: task }])
     setTask("")
   }
 
-  const saveTask = (e) => {
+  const saveTask = async(e) => {
     e.preventDefault()
 
     if(!validForm()) {
       return
     }
+
+    const result = await updateDocument("tasks", id, { name: task })
+    if (!result.statusResponse) {
+      setError(result.error)
+      return
+    } 
 
     const editedTasks = tasks.map(item => item.id === id ? { id, name: task } : item)
     setTasks(editedTasks)
@@ -59,7 +71,13 @@ function App() {
     setId("")
   }
 
-  const deleteTask = (id) => {
+  const deleteTask = async(id) => {
+    const result = await deleteDocument("tasks", id)
+    if (!result.statusResponse) {
+      setError(result.error)
+      return
+    }
+
     const filteredTasks = tasks.filter(task => task.id !== id)
     setTasks(filteredTasks)
   }
@@ -76,8 +94,13 @@ function App() {
         <h1>Tareas</h1>
         <hr></hr>
         <div className="row">
-          <div className="col-8">
+          <div className="col-lg-8 col-xs-12">
             <h4 className="text-center">Lista de Tareas</h4>
+            <input 
+              type="text" 
+              className="form-control mb-2" 
+              placeholder="Buscar...">
+            </input>
             {
               size(tasks) == 0 ? (
                 <li className="list-group-item">No hay tareas programadas.</li>
@@ -89,7 +112,11 @@ function App() {
                     <span className="lead">{task.name}</span>
                     <button 
                       className="btn btn-danger btn-sm float-right mx-2"
-                      onClick={() => deleteTask(task.id)}>
+                      onClick={() => {
+                        if(window.confirm('Eliminar esta tarea?')) {
+                          deleteTask(task.id)
+                        }
+                      }}>
                       Eliminar
                     </button>
                     <button 
@@ -104,7 +131,7 @@ function App() {
               )            
             }
           </div>
-          <div className="col-4">
+          <div className="col-lg-4 col-xs-12">
           <h4 className="text-center">{ editMode ? "Editar Tarea" : "Agregar Tarea" }</h4>
 
           <form onSubmit={ editMode ? saveTask : addTask }>

@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { isEmpty, size, sortBy } from 'lodash'
 import shortid from 'shortid'
 import { addDocument, getCollection, updateDocument, deleteDocument } from './actions'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPencilAlt } from '@fortawesome/free-solid-svg-icons'
+import { faTrash } from '@fortawesome/free-solid-svg-icons'
 
+function searchingTerm(term) {
+  return function(x) {
+    return x.name.toLowerCase().includes(term.toLowerCase()) || !term
+  }
+}
 
 function App() {
   const [task, setTask] = useState("")
@@ -10,6 +18,7 @@ function App() {
   const [editMode, setEditMode] = useState(false)
   const [id, setId] = useState("")
   const [error, setError] = useState(null)
+  const [term, setTerm] = useState("")
 
   useEffect(() => {
     (async () => {
@@ -88,6 +97,15 @@ function App() {
     setId(theTask.id)
   }
 
+  //Para agregar estilos personalizados a elementos HTML
+  //Declaramos un objeto para almacenar los atributos del estilo
+  /* const hoverable = {
+    color: "red",
+    backgroundColor: "DodgerBlue"
+  } */
+  //Luego le aplicamos el estilo al elemento h4 por ejemplo
+  //<h4 style={hoverable}>Lista de Tareas</h4>
+
   return (
     <div className="App">
       <div className="container mt-5">
@@ -99,7 +117,8 @@ function App() {
             <input 
               type="text" 
               className="form-control mb-2" 
-              placeholder="Buscar...">
+              placeholder="Buscar..."
+              onChange={e => setTerm(e.target.value)}>
             </input>
             {
               size(tasks) == 0 ? (
@@ -107,22 +126,24 @@ function App() {
               ) : (
                 <ul className="list-group">
                 {
-                  tasks.map((task) => (               
-                  <li className="list-group-item" key={task.id}>
+                  tasks.filter(searchingTerm(term)).map((task) => (               
+                  <li className="list-group-item list-group-item-action" key={task.id}>
                     <span className="lead">{task.name}</span>
                     <button 
                       className="btn btn-danger btn-sm float-right mx-2"
+                      title="Eliminar"
                       onClick={() => {
                         if(window.confirm('Eliminar esta tarea?')) {
                           deleteTask(task.id)
                         }
                       }}>
-                      Eliminar
+                      <span><FontAwesomeIcon icon={faTrash} /></span>
                     </button>
                     <button 
                       className="btn btn-warning btn-sm float-right"
+                      title="Editar"
                       onClick={() => editTask(task)}>
-                      Editar
+                      <span><FontAwesomeIcon icon={faPencilAlt} /></span>
                     </button>
                   </li>
                   ))
